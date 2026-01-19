@@ -14,6 +14,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+console.log("App starting on Azure...");
+
 const server = new ApolloServer({
   typeDefs,
   resolvers,
@@ -35,5 +37,5 @@ mongoose
 const PORT = process.env.PORT || 7000;
 
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}/graphql`);
+  console.log(`Server running o port ${PORT}`);
 });
