@@ -11,11 +11,25 @@ import { getUserFromToken } from "./src/utils/auth.js";
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+/* =======================
+   CORS (Azure + Local)
+======================= */
+app.use(
+  cors({
+    origin: "*", // Azure + local dono ke liye
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+
 app.use(express.json());
 
-console.log("App starting on Azure...");
+console.log("🚀 App starting on Azure...");
 
+/* =======================
+   Apollo Server
+======================= */
 const server = new ApolloServer({
   typeDefs,
   resolvers,
@@ -26,16 +40,25 @@ const server = new ApolloServer({
   },
 });
 
-await server.start();
-server.applyMiddleware({ app });
+/* =======================
+   Start Server (IMPORTANT)
+======================= */
+async function startServer() {
+  try {
+    await server.start();
+    server.applyMiddleware({ app });
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch((err) => console.log(err));
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("✅ MongoDB Connected");
 
-const PORT = process.env.PORT || 7000;
+    const PORT = process.env.PORT || 8080;
+    app.listen(PORT, () => {
+      console.log(`✅ Server running on port ${PORT}`);
+      console.log(`🚀 GraphQL → /graphql`);
+    });
+  } catch (err) {
+    console.error("❌ Server failed to start:", err);
+  }
+}
 
-app.listen(PORT, () => {
-  console.log(`Server running o port ${PORT}`);
-});
+startServer();
