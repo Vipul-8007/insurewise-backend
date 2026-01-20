@@ -12,53 +12,45 @@ dotenv.config();
 
 const app = express();
 
-/* =======================
-   CORS (Azure + Local)
-======================= */
+/* ✅ CORS – Azure + Local dono ke liye */
 app.use(
   cors({
-    origin: "*", // Azure + local dono ke liye
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    origin: [
+      "http://localhost:5173",
+      "https://insurewise.vercel.app", // future frontend
+    ],
+    credentials: true,
   }),
 );
 
 app.use(express.json());
 
-console.log("🚀 App starting on Azure...");
-
-/* =======================
-   Apollo Server
-======================= */
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-  context: ({ req }) => {
-    const token = req.headers.authorization || "";
-    const user = getUserFromToken(token);
-    return { user };
-  },
-});
-
-/* =======================
-   Start Server (IMPORTANT)
-======================= */
 async function startServer() {
-  try {
-    await server.start();
-    server.applyMiddleware({ app });
+  console.log("Starting backend on Azure...");
 
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("✅ MongoDB Connected");
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    context: ({ req }) => {
+      const token = req.headers.authorization || "";
+      const user = getUserFromToken(token);
+      return { user };
+    },
+  });
 
-    const PORT = process.env.PORT || 8080;
-    app.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT}`);
-      console.log(`🚀 GraphQL → /graphql`);
-    });
-  } catch (err) {
-    console.error("❌ Server failed to start:", err);
-  }
+  await server.start();
+  server.applyMiddleware({ app, path: "/graphql" });
+
+  await mongoose.connect(process.env.MONGO_URI);
+  console.log("MongoDB Connected");
+
+  const PORT = process.env.PORT || 8080;
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error("Server failed to start", err);
+});
